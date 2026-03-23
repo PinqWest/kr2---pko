@@ -1,0 +1,45 @@
+@startuml
+!include style-dark.puml
+
+class "Project" as Project {
+  id : int
+  name : string
+  isArchived : bool
+  createdAt : datetime
+}
+
+class "TaskItem" as TaskItem {
+  id : int
+  title : string
+  description : string?
+  projectId : int
+  status : int
+}
+
+class "TimeEntry" as TimeEntry {
+  id : int
+  taskItemId : int
+  startAt : datetime
+  endAt : datetime?
+  durationMinutes : int
+  comment : string?
+  isManual : bool
+  isArchived : bool
+}
+
+class "Tag" as Tag {
+  id : int
+  name : string
+}
+
+class "TaskItemTag" as TaskItemTag {
+  taskItemId : int
+  tagId : int
+}
+
+Project "1" *-- "0..*" TaskItem : +tasks
+TaskItem "1" *-- "0..*" TimeEntry : +timeEntries
+TaskItem "1" o-- "0..*" TaskItemTag : +taskTagMap
+Tag "1" o-- "0..*" TaskItemTag : +taskTagMap
+
+@enduml

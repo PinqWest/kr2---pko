@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="KR2/KR2.csproj" />
+  <Project Path="TimeTracker.Core/TimeTracker.Core.csproj" />
+  <Project Path="TimeTracker.Infrastructure/TimeTracker.Infrastructure.csproj" />
+  <Project Path="TimeTracker.Tests/TimeTracker.Tests.csproj" />
+</Solution>

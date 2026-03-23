@@ -1,0 +1,49 @@
+@startuml
+!include style-dark.puml
+
+class "MainWindow" as MainWindow {
+  owner = App
+  openJournal()
+  openReports()
+}
+
+class "MainViewModel" as MainVM {
+  statusMessage
+  activeTaskText
+  todaySummary
+  isTimerRunning
+  startTimer()
+  pauseTimer()
+  resumeTimer()
+  stopTimer()
+  createTask()
+}
+
+class "TimeTrackerService" as Service {
+  startTask(taskId, comment)
+  pauseActiveTask(comment)
+  resumeTask(taskId, comment)
+  stopActiveTask(comment)
+  getTasks()
+  getTodayTotalMinutes()
+}
+
+class "TaskListItem" as TaskItem {
+  id
+  title
+  status
+}
+
+class "RecentTimeEntryVM" as RecentEntry {
+  taskTitle
+  startedAt
+  endedAt
+  duration
+}
+
+MainWindow --> MainVM : +dataContext
+MainVM --> Service : +service
+MainVM "1" o-- "0..*" TaskItem : +tasks
+MainVM "1" o-- "0..*" RecentEntry : +recentEntries
+
+@enduml

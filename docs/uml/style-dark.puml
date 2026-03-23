@@ -1,0 +1,23 @@
+@startuml
+' Shared dark style close to sample image
+skinparam backgroundColor #1E1C19
+skinparam shadowing false
+skinparam monochrome true
+skinparam defaultFontName Consolas
+skinparam defaultFontColor #F2F2F2
+skinparam ArrowColor #F2F2F2
+skinparam ArrowThickness 1.2
+skinparam ClassBackgroundColor #1E1C19
+skinparam ClassBorderColor #F2F2F2
+skinparam ClassBorderThickness 1.4
+skinparam ClassFontColor #F2F2F2
+skinparam ClassAttributeFontColor #F2F2F2
+skinparam ClassStereotypeFontColor #F2F2F2
+skinparam ClassFontSize 17
+skinparam ClassAttributeFontSize 12
+skinparam RoundCorner 8
+skinparam linetype polyline
+hide circle
+hide empty methods
+hide empty fields
+@enduml

@@ -1,0 +1,37 @@
+@startuml
+!include style-dark.puml
+
+class "JournalWindow" as JournalWindow {
+  title = "Полный журнал TimeEntry"
+}
+
+class "JournalViewModel" as JournalVM {
+  isTodayOnly
+  statusMessage
+  selectedEntry
+  loadEntries()
+  saveSelected()
+  archiveSelected()
+}
+
+class "JournalEntryVM" as JournalEntry {
+  timeEntryId
+  taskTitle
+  startAtLocal
+  endAtLocal
+  comment
+  duration
+}
+
+class "TimeTrackerService" as Service {
+  getAllEntries(onlyToday)
+  updateTimeEntry(id, startAt, endAt, comment)
+  archiveTimeEntry(id)
+}
+
+JournalWindow --> JournalVM : +dataContext
+JournalVM --> Service : +service
+JournalVM "1" o-- "0..*" JournalEntry : +entries
+JournalVM --> JournalEntry : +selectedEntry
+
+@enduml

@@ -1,0 +1,53 @@
+@startuml
+!include style-dark.puml
+
+class "ReportsWindow" as ReportsWindow {
+  title = "Отчеты и экспорт"
+}
+
+class "ReportViewModel" as ReportVM {
+  startDate
+  endDate
+  dayGoalHours
+  weekGoalHours
+  totalHours
+  planFactDay
+  planFactWeek
+  buildReport()
+  exportCsv()
+  exportPdf()
+}
+
+class "TimeTrackerService" as Service {
+  getPeriodReport(startUtc, endUtc, dayGoalMin, weekGoalMin)
+  exportPeriodReportCsv(report, filePath)
+  exportPeriodReportPdf(report, filePath)
+}
+
+class "TimeReportDto" as ReportDto {
+  totalMinutes
+  byProjects[]
+  byTasks[]
+  byTags[]
+  byDays[]
+  entries[]
+  planFact
+}
+
+class "ReportAggregateItem" as Agg {
+  name
+  minutes
+}
+
+class "ReportDaySummary" as Day {
+  day
+  minutes
+}
+
+ReportsWindow --> ReportVM : +dataContext
+ReportVM --> Service : +service
+ReportVM --> ReportDto : +currentReport
+ReportDto "1" o-- "0..*" Agg : +aggregates
+ReportDto "1" o-- "0..*" Day : +days
+
+@enduml

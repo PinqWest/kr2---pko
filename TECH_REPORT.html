@@ -1,0 +1,416 @@
+﻿<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Segoe UI,Arial,sans-serif;margin:32px;} pre{white-space:pre-wrap;word-wrap:break-word;font-size:12px;line-height:1.45;}</style></head><body><pre># TimeTracker - технический отчет
+
+## 1) Что это за проект
+
+`TimeTracker` - desktop-приложение на WPF для учета рабочего времени по задачам.  
+Решение разделено на 3 слоя:
+
+- `KR2` - UI (WPF окна + ViewModel).
+- `TimeTracker.Core` - доменные сущности, DTO, интерфейсы сервисов.
+- `TimeTracker.Infrastructure` - EF Core (SQLite), реализация бизнес-логики, экспорт CSV/PDF.
+
+Ключевые возможности:
+
+- запуск/пауза/продолжение/остановка таймера;
+- журнал записей времени и редактирование;
+- отчет за период (по проектам, задачам, тегам);
+- план-факт (цели на день/неделю);
+- экспорт отчета в CSV/PDF;
+- простая диаграмма &quot;часы по дням&quot;.
+
+---
+
+## 2) Архитектура и взаимодействие слоев
+
+```mermaid
+flowchart LR
+    UI[KR2 / WPF UI] --&gt; VM[ViewModels]
+    VM --&gt; I[ITimeTrackerService]
+    I --&gt; S[TimeTrackerService]
+    S --&gt; DBF[AppDbContextFactory]
+    DBF --&gt; EF[AppDbContext / EF Core]
+    EF --&gt; SQL[(SQLite timetracker.db)]
+    S --&gt; CSV[CSV export]
+    S --&gt; PDF[PDF export / QuestPDF]
+```
+
+Паттерн взаимодействия:
+
+1. ViewModel вызывает методы `ITimeTrackerService`.
+2. Сервис открывает `AppDbContext` через `AppDbContextFactory`.
+3. Выполняется чтение/изменение данных в SQLite.
+4. ViewModel обновляет состояние UI.
+
+---
+
+## 3) Основные модули
+
+### 3.1 UI слой (`KR2`)
+
+- `MainWindow` + `MainViewModel`:
+  - управление таймером;
+  - список задач;
+  - краткий дашборд;
+  - переходы в журнал и отчеты.
+- `JournalWindow` + `JournalViewModel`:
+  - полный список `TimeEntry`;
+  - редактирование интервалов;
+  - архивация записей.
+- `ReportsWindow` + `ReportViewModel`:
+  - выбор периода;
+  - цели план-факт;
+  - агрегаты и диаграмма;
+  - экспорт CSV/PDF.
+
+### 3.2 Core слой (`TimeTracker.Core`)
+
+- Сущности: `Project`, `TaskItem`, `TimeEntry`, `Tag`, `TaskItemTag`, `User`.
+- Контракт: `ITimeTrackerService`.
+- DTO:
+  - `TaskItemDto`, `RecentTimeEntryDto`;
+  - `TimeReportDto` и связанные модели отчетов.
+
+### 3.3 Infrastructure слой (`TimeTracker.Infrastructure`)
+
+- `AppDbContext` - описание таблиц и связей.
+- `AppDbContextFactory` - создание контекста SQLite.
+- `TimeTrackerService` - бизнес-операции:
+  - таймер;
+  - журнал;
+  - отчеты;
+  - экспорт.
+
+---
+
+## 4) UML диаграмма классов (упрощенная)
+
+```mermaid
+classDiagram
+    class ITimeTrackerService {
+        &lt;&lt;interface&gt;&gt;
+        +GetTasks()
+        +CreateTask(taskTitle)
+        +StartTask(taskItemId, comment)
+        +PauseActiveTask(comment)
+        +ResumeTask(taskItemId, comment)
+        +StopActiveTask(comment)
+        +GetRecentEntries(count, onlyToday)
+        +GetAllEntries(onlyToday)
+        +UpdateTimeEntry(id, startAt, endAt, comment)
+        +ArchiveTimeEntry(id)
+        +GetPeriodReport(startUtc, endUtc, dayGoal, weekGoal)
+        +ExportPeriodReportCsv(report, filePath)
+        +ExportPeriodReportPdf(report, filePath)
+    }
+
+    class TimeTrackerService
+    ITimeTrackerService &lt;|.. TimeTrackerService
+
+    class AppDbContextFactory {
+        +CreateDbContext()
+    }
+    class AppDbContext
+
+    TimeTrackerService --&gt; AppDbContextFactory
+    AppDbContextFactory --&gt; AppDbContext
+
+    class MainViewModel
+    class JournalViewModel
+    class ReportViewModel
+    MainViewModel --&gt; ITimeTrackerService
+    JournalViewModel --&gt; ITimeTrackerService
+    ReportViewModel --&gt; ITimeTrackerService
+
+    class Project {
+        +Id
+        +Name
+    }
+    class TaskItem {
+        +Id
+        +Title
+        +ProjectId
+        +Status
+    }
+    class TimeEntry {
+        +Id
+        +TaskItemId
+        +StartAt
+        +EndAt
+        +DurationMinutes
+        +IsArchived
+    }
+    class Tag {
+        +Id
+        +Name
+    }
+    class TaskItemTag {
+        +TaskItemId
+        +TagId
+    }
+
+    Project &quot;1&quot; --&gt; &quot;*&quot; TaskItem
+    TaskItem &quot;1&quot; --&gt; &quot;*&quot; TimeEntry
+    TaskItem &quot;1&quot; --&gt; &quot;*&quot; TaskItemTag
+    Tag &quot;1&quot; --&gt; &quot;*&quot; TaskItemTag
+```
+
+---
+
+## 5) UML sequence: запуск и остановка таймера
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant MW as MainViewModel
+    participant S as ITimeTrackerService/TimeTrackerService
+    participant DB as SQLite
+
+    U-&gt;&gt;MW: Start
+    MW-&gt;&gt;S: StartTask(taskId, comment)
+    S-&gt;&gt;DB: check active entry
+    S-&gt;&gt;DB: insert TimeEntry(StartAt, EndAt=null)
+    S--&gt;&gt;MW: ok
+    MW--&gt;&gt;U: Таймер запущен
+
+    U-&gt;&gt;MW: Stop
+    MW-&gt;&gt;S: StopActiveTask(comment)
+    S-&gt;&gt;DB: update active TimeEntry(EndAt, DurationMinutes)
+    S--&gt;&gt;MW: ok
+    MW--&gt;&gt;U: Таймер остановлен
+```
+
+---
+
+## 6) UML activity: построение отчета за период
+
+```mermaid
+flowchart TD
+    A[Выбор периода и целей] --&gt; B[ReportViewModel.BuildReport]
+    B --&gt; C[GetPeriodReport]
+    C --&gt; D[Загрузка TimeEntry из БД]
+    D --&gt; E[Агрегация: проекты/задачи/теги]
+    E --&gt; F[Агрегация: дни]
+    F --&gt; G[Расчет план-факт]
+    G --&gt; H[Возврат TimeReportDto]
+    H --&gt; I[Обновление таблиц и диаграммы в UI]
+    I --&gt; J{Экспорт?}
+    J -- CSV --&gt; K[ExportPeriodReportCsv]
+    J -- PDF --&gt; L[ExportPeriodReportPdf]
+```
+
+---
+
+## 7) Структура данных (логическая)
+
+- `Project` 1-&gt;N `TaskItem`
+- `TaskItem` 1-&gt;N `TimeEntry`
+- `TaskItem` N&lt;-&gt;N `Tag` через `TaskItemTag`
+- `TimeEntry` хранит:
+  - временной интервал;
+  - итог в минутах;
+  - комментарий;
+  - флаг архивности.
+
+---
+
+## 8) Как работают ключевые функции
+
+### 8.1 Таймер
+
+- `StartTask` запрещает запуск, если уже есть активный `TimeEntry`.
+- `PauseActiveTask` завершает текущую запись без перевода задачи в `Done`.
+- `StopActiveTask` завершает запись и переводит задачу в `Done`.
+
+### 8.2 Журнал
+
+- Отображает записи (все или только за сегодня).
+- Позволяет менять `StartAt/EndAt/Comment`.
+- Проверяет пересечения интервалов в рамках задачи.
+- Поддерживает мягкое удаление через `IsArchived`.
+
+### 8.3 Отчеты
+
+- Получает диапазон дат и цели (день/неделя).
+- Формирует агрегаты:
+  - по проектам;
+  - по задачам;
+  - по тегам;
+  - по дням.
+- Вычисляет план-факт:
+  - процент выполнения по дневной цели;
+  - процент выполнения по недельной цели.
+
+### 8.4 Экспорт
+
+- CSV: строки детализации + итоговые значения.
+- PDF: сводка, таблицы по дням и задачам, детализация по дням/задачам, детализация записей.
+
+---
+
+## 9) Ограничения и зоны улучшения
+
+- Временная логика строится через `DateTime.UtcNow`; для сложных TZ-сценариев лучше перейти на `DateTimeOffset`.
+- Нет полноценной миграционной стратегии EF (`EnsureCreated` + SQL добавления колонок).
+- Теги пока не редактируются из UI (используются в отчетной модели при наличии данных).
+- Нет unit/integration тестов на новый отчетный функционал.
+
+---
+
+## 10) Рекомендации по развитию
+
+1. Добавить EF Core Migrations и versioned schema updates.
+2. Добавить тесты:
+   - расчеты план-факта;
+   - корректность агрегаций;
+   - экспорт CSV/PDF.
+3. Добавить фильтры отчета по проекту/задаче/тегу.
+4. Добавить drill-down из диаграммы в список записей дня.
+
+---
+
+## 11) UML по окнам приложения
+
+### 11.1 Main Window (`MainWindow` + `MainViewModel`)
+
+```mermaid
+flowchart TD
+    A[MainWindow] --&gt; B[MainViewModel]
+    B --&gt; C[ITimeTrackerService]
+
+    B --&gt; D[Команды таймера]
+    D --&gt; D1[StartTimerCommand]
+    D --&gt; D2[PauseTimerCommand]
+    D --&gt; D3[ResumeTimerCommand]
+    D --&gt; D4[StopTimerCommand]
+
+    B --&gt; E[Работа с задачами]
+    E --&gt; E1[CreateTaskCommand]
+    E --&gt; E2[LoadTasks]
+
+    B --&gt; F[Дашборд]
+    F --&gt; F1[RecentEntries]
+    F --&gt; F2[TodaySummary]
+    F --&gt; F3[StatusMessage / StatusBrush]
+
+    B --&gt; G[Навигация]
+    G --&gt; G1[OpenJournalCommand]
+    G --&gt; G2[OpenReportsCommand]
+```
+
+### 11.2 Journal Window (`JournalWindow` + `JournalViewModel`)
+
+```mermaid
+flowchart TD
+    A[JournalWindow] --&gt; B[JournalViewModel]
+    B --&gt; C[ITimeTrackerService]
+
+    B --&gt; D[Загрузка данных]
+    D --&gt; D1[LoadEntries]
+    D --&gt; D2[Фильтр: IsTodayOnly]
+
+    B --&gt; E[Редактирование]
+    E --&gt; E1[SaveChangesCommand]
+    E1 --&gt; E11[UpdateTimeEntry]
+
+    B --&gt; F[Архивация]
+    F --&gt; F1[ArchiveCommand]
+    F1 --&gt; F11[ArchiveTimeEntry]
+
+    B --&gt; G[Статус]
+    G --&gt; G1[StatusMessage]
+    G --&gt; G2[SelectedEntry]
+```
+
+### 11.3 Reports Window (`ReportsWindow` + `ReportViewModel`)
+
+```mermaid
+flowchart TD
+    A[ReportsWindow] --&gt; B[ReportViewModel]
+    B --&gt; C[ITimeTrackerService]
+
+    B --&gt; D[Параметры отчета]
+    D --&gt; D1[StartDate / EndDate]
+    D --&gt; D2[DayGoalHours / WeekGoalHours]
+
+    B --&gt; E[Формирование]
+    E --&gt; E1[BuildReportCommand]
+    E1 --&gt; E11[GetPeriodReport]
+
+    B --&gt; F[Визуализация]
+    F --&gt; F1[ByProjects]
+    F --&gt; F2[ByTasks]
+    F --&gt; F3[ByTags]
+    F --&gt; F4[ByDays columns chart]
+    F --&gt; F5[PlanFactDay / PlanFactWeek]
+
+    B --&gt; G[Экспорт]
+    G --&gt; G1[ExportCsvCommand]
+    G --&gt; G2[ExportPdfCommand]
+    G1 --&gt; G11[ExportPeriodReportCsv]
+    G2 --&gt; G21[ExportPeriodReportPdf]
+```
+
+---
+
+## 12) Детальная ER-диаграмма БД
+
+```mermaid
+erDiagram
+    USERS {
+        int Id PK
+        string Name
+        datetime CreatedAt
+    }
+
+    PROJECTS {
+        int Id PK
+        string Name
+        bool IsArchived
+        datetime CreatedAt
+    }
+
+    TASKITEMS {
+        int Id PK
+        string Title
+        string Description
+        int ProjectId FK
+        int Status
+    }
+
+    TIMEENTRIES {
+        int Id PK
+        int TaskItemId FK
+        datetime StartAt
+        datetime EndAt
+        int DurationMinutes
+        string Comment
+        bool IsManual
+        bool IsArchived
+    }
+
+    TAGS {
+        int Id PK
+        string Name
+    }
+
+    TASKITEMTAGS {
+        int TaskItemId PK,FK
+        int TagId PK,FK
+    }
+
+    PROJECTS ||--o{ TASKITEMS : &quot;has tasks&quot;
+    TASKITEMS ||--o{ TIMEENTRIES : &quot;has time entries&quot;
+    TASKITEMS ||--o{ TASKITEMTAGS : &quot;mapped&quot;
+    TAGS ||--o{ TASKITEMTAGS : &quot;mapped&quot;
+```
+
+### Пояснение по ключам и ограничениям
+
+- `TaskItem.ProjectId` -&gt; `Projects.Id`
+- `TimeEntry.TaskItemId` -&gt; `TaskItems.Id`
+- `TaskItemTag` имеет составной PK: (`TaskItemId`, `TagId`)
+- `TaskItemTag.TaskItemId` -&gt; `TaskItems.Id`
+- `TaskItemTag.TagId` -&gt; `Tags.Id`
+- `Users` в текущем UI-потоке не используется, но таблица готова к мультипользовательскому расширению.
+
+</pre></body></html>
