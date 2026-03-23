@@ -53,7 +53,7 @@ dotnet run --project .\KR2\KR2.csproj
 dotnet test KR2.slnx
 ```
 
-## Архитектура (кратко)
+## Архитектура
 
 Поток вызовов:
 1. `ViewModel` в `KR2` вызывает `ITimeTrackerService`.
@@ -71,18 +71,9 @@ UML хранится в `docs/uml`.
 - `reports-window.puml` - структура окна отчетов;
 - `database-er.puml` - ER-диаграмма базы данных.
 
-Общий стиль: `docs/uml/style-dark.puml`.
 
-### Быстрый рендер UML
 
-В папке `docs/uml` есть скрипт `render.ps1`, который генерирует `.png` и `.svg`:
-
-```powershell
-cd .\docs\uml
-.\render.ps1
-```
-
-### Готовые картинки (после рендера)
+### Готовые картинки
 
 ![Main Window UML](docs/uml/main-window.svg)
 ![Journal Window UML](docs/uml/journal-window.svg)
@@ -91,7 +82,7 @@ cd .\docs\uml
 
 ---
 
-## Технический отчет (подробно)
+## Технический отчет 
 
 ## 1) Что это за проект
 
