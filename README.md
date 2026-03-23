@@ -338,21 +338,9 @@ flowchart TD
 - Теги пока не редактируются из UI (используются в отчетной модели при наличии данных).
 - Нет unit/integration тестов на новый отчетный функционал.
 
----
 
-## 10) Рекомендации по развитию
 
-1. Добавить EF Core Migrations и versioned schema updates.
-2. Добавить тесты:
-   - расчеты план-факта;
-   - корректность агрегаций;
-   - экспорт CSV/PDF.
-3. Добавить фильтры отчета по проекту/задаче/тегу.
-4. Добавить drill-down из диаграммы в список записей дня.
-
----
-
-## 11) UML по окнам приложения
+## 10) UML по окнам приложения
 
 ### 11.1 Main Window (`MainWindow` + `MainViewModel`)
 
@@ -360,13 +348,13 @@ flowchart TD
 
 ![UML Main Window](docs/uml/main-window.svg)
 
-### 11.2 Journal Window (`JournalWindow` + `JournalViewModel`)
+### 10.2 Journal Window (`JournalWindow` + `JournalViewModel`)
 
 Исходник: `docs/uml/journal-window.puml`
 
 ![UML Journal Window](docs/uml/journal-window.svg)
 
-### 11.3 Reports Window (`ReportsWindow` + `ReportViewModel`)
+### 10.3 Reports Window (`ReportsWindow` + `ReportViewModel`)
 
 Исходник: `docs/uml/reports-window.puml`
 
@@ -374,7 +362,7 @@ flowchart TD
 
 ---
 
-## 12) Детальная ER-диаграмма БД
+## 11) Детальная ER-диаграмма БД
 
 Исходник: `docs/uml/database-er.puml`
 
@@ -389,17 +377,19 @@ flowchart TD
 - `TaskItemTag.TagId` -> `Tags.Id`
 - `Users` в текущем UI-потоке не используется, но таблица готова к мультипользовательскому расширению.
 
+------
+
+## 12) Рекомендации по развитию
+
+1. Добавить EF Core Migrations и versioned schema updates.
+2. Добавить тесты:
+   - расчеты план-факта;
+   - корректность агрегаций;
+   - экспорт CSV/PDF.
+3. Добавить фильтры отчета по проекту/задаче/тегу.
+4. Добавить drill-down из диаграммы в список записей дня.
+
 ---
 
-## 13) Готовые UML-файлы в стиле "как на фото"
 
-Файлы лежат в `docs/uml`:
-
-- `docs/uml/main-window.puml`
-- `docs/uml/journal-window.puml`
-- `docs/uml/reports-window.puml`
-- `docs/uml/database-er.puml`
-- `docs/uml/style-dark.puml` (общий визуальный стиль)
-
-Инструкция по рендеру PNG/SVG/PDF: `docs/uml/README.md`.
 
