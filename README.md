@@ -679,15 +679,5 @@ flowchart TD
 
 ---
 
-## 13) Готовые UML-файлы в стиле "как на фото"
 
-Файлы лежат в `docs/uml`:
-
-- `docs/uml/main-window.puml`
-- `docs/uml/journal-window.puml`
-- `docs/uml/reports-window.puml`
-- `docs/uml/database-er.puml`
-- `docs/uml/style-dark.puml` (общий визуальный стиль)
-
-Инструкция по рендеру PNG/SVG/PDF: `docs/uml/README.md`.
 
